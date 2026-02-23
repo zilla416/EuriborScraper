@@ -91,6 +91,7 @@ _SWAGGER_HTML = """
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Euribor Rates API – Swagger UI</title>
+  <link rel="icon" type="image/png" href="https://fastapi.tiangolo.com/img/favicon.png" sizes="32x32"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
   <style>
     /* ── Toggle button ── */
