@@ -18,7 +18,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from scraper import (
     VALID_TERMS,
@@ -41,7 +41,7 @@ app = FastAPI(
         "Data is scraped from HTML tables and cached server-side."
     ),
     version="1.0.0",
-    docs_url="/docs",
+    docs_url=None,
     redoc_url="/redoc",
 )
 
@@ -80,6 +80,92 @@ def _ok(data: Any, meta: dict | None = None) -> JSONResponse:
     if meta:
         body["meta"] = meta
     return JSONResponse(body)
+
+
+# ─── Custom Swagger UI with dark-mode toggle ─────────────────────────────────
+
+_SWAGGER_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Euribor Rates API – Swagger UI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    /* ── Toggle button ── */
+    #dm-toggle {
+      position: fixed;
+      top: 14px;
+      right: 20px;
+      z-index: 9999;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #333;
+      font-size: 13px;
+      font-family: sans-serif;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+      transition: background .2s, color .2s;
+    }
+    #dm-toggle:hover { background: #f0f0f0; }
+
+    /* ── Dark mode: invert the whole UI, then re-invert images/code ── */
+    body.dm { background: #1a1a2e; }
+    body.dm .swagger-ui {
+      filter: invert(88%) hue-rotate(180deg);
+    }
+    body.dm .swagger-ui img,
+    body.dm .swagger-ui svg.svg-assets,
+    body.dm .swagger-ui .highlight-code,
+    body.dm .swagger-ui .microlight {
+      filter: invert(100%) hue-rotate(180deg);
+    }
+    body.dm #dm-toggle {
+      background: #2e2e4e;
+      color: #ddd;
+      border-color: #555;
+    }
+    body.dm #dm-toggle:hover { background: #3a3a5e; }
+  </style>
+</head>
+<body>
+  <button id="dm-toggle">&#127769; Dark mode</button>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: "/openapi.json",
+      dom_id: "#swagger-ui",
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+      plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+      layout: "StandaloneLayout"
+    });
+
+    const btn = document.getElementById("dm-toggle");
+    const apply = (dark) => {
+      document.body.classList.toggle("dm", dark);
+      btn.innerHTML = dark ? "&#9728;&#65039; Light mode" : "&#127769; Dark mode";
+    };
+    apply(localStorage.getItem("euribor-dm") === "1");
+    btn.addEventListener("click", () => {
+      const next = !document.body.classList.contains("dm");
+      apply(next);
+      localStorage.setItem("euribor-dm", next ? "1" : "0");
+    });
+  </script>
+</body>
+</html>
+"""
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui() -> HTMLResponse:
+    return HTMLResponse(_SWAGGER_HTML)
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
